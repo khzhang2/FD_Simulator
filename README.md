@@ -4,4 +4,4 @@ Agent based model.
 
 demo:
 
-<img src="./res_img/demo.gif" width="600">
+<img src="./res_img/demo.gif" width="1000">
