@@ -113,8 +113,8 @@ class rider:
         self.speed = self.maxspeed / 2
         self.if_matched = False
         self.customer_nodes = []
+        self.finished_destination = []
         self.merchant_node = None
-        self.matched_orders = []
         self.path = None
         self.destination = None
         self.total_time = 0
@@ -135,9 +135,9 @@ class rider:
         self.dec_var = dec_var  # decision variables
 
     def update_customer_nodes(self):
-        self.merchant_node = self.closest_merchant_node
+        self.finished_destination = []
+        # rider merchant_node has been updated in function "move_rider"
         self.destination = self.merchant_node
-        
         adj_node, adj_node_position = get_adj_node_position(self.position)
         if np.linalg.norm(adj_node_position - self.position) == 0:
             self.direction = norm_vec(np.random.rand(2))
@@ -226,6 +226,7 @@ class rider:
             # restart
             self.state = 'working'
             self.stop_time = 0
+            self.finished_destination.append(self.destination)  # consider the current destination as finished
             # update
             next_destination = get_closest_node_dijkstra(self.position, self.customer_nodes)
             if next_destination==None:
@@ -237,7 +238,6 @@ class rider:
             new_customer_nodes.extend(self.customer_nodes[:next_dest_i])
             new_customer_nodes.extend(self.customer_nodes[next_dest_i+1:])
             self.customer_nodes = new_customer_nodes
-            self.matched_orders.append(next_destination)
             self.update(next_destination, t_resolution)
         else:
             self.stop_time = self.stop_time + t_resolution
@@ -254,7 +254,6 @@ class rider:
         self.speed = self.maxspeed / 2
         self.if_matched = False
         self.customer_nodes = []
-        self.matched_orders = []
         self.path = None
         self.destination = None
         self.merchant_node = None
@@ -275,7 +274,7 @@ class rider:
         next_node_position = get_node_xy(self.next_node)
         self.direction = norm_vec(next_node_position - self.position)
 
-def move_rider(rider_set, t_resolution, matched_rider_IDs, matched_batches, dec_var):
+def move_rider(rider_set, t_resolution, matched_rider_IDs, matched_batches, matched_merchants, dec_var):
     for i in range(len(rider_set)):
         rider_i = rider_set[i]
         if rider_i.ID in matched_rider_IDs:
@@ -286,6 +285,8 @@ def move_rider(rider_set, t_resolution, matched_rider_IDs, matched_batches, dec_
             
             # get the corresponding matched batch and update to customer_nodes
             rider_i.customer_nodes = list(matched_batches[batch_index, :])
+            # get the corresponding matched merchant and update to merchant_node
+            rider_i.merchant_node = matched_merchants[batch_index]
             # move rider with updated customer_nodes
             rider_i.move(t_resolution, dec_var)
         else:
