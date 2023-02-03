@@ -5,7 +5,7 @@ Author: K.Z.
 Agent based model.
 
 ## Deomonstration animation
-N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability.
+N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability. The merchant node size represents the number of accumulated orders in this merchant.
 
 <img src="./res_img/demo.gif" width="750">
 
