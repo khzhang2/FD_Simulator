@@ -92,4 +92,4 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |update_cust_df_with_new_cust       |Update the attribute customer_df with newly generated customers|When (quickly after) order generation|acquire_order|n/a|
 |acquire_order                      |Generate new orders, only those who lies in the delivery area will be kept|At the begining of each iteration|n/a|update_cust_df_with_new_cust|
 |update_matched_order               |Update attribute matched_customer_df with matched orders (by node ID, if multiple customers locate on one node, label the one with longest waiting time as matched), and remove the mathced customers from the attributes customer_df|After complete matching|match|n/a|
-|match                              |Match the idle riders to customers, batch matching|Every matching period|n/a|update_matched_order|
+|match                              |Match the idle riders to customers (and coresponding merchant, only when the closest merchant of this rider is the coresponding merchant can it be matched, and of course, its if_matchable attribute should be True), batch matching|Every matching period|n/a|update_matched_order|
