@@ -10,9 +10,9 @@ N_v represents number of idle riders, N_b represents number of accumulated order
 <img src="./res_img/demo.gif" width="750">
 
 ## Features
-### How riders look for routes?
+### How riders get their routes?
 Dijkstra method
-### How riders determine which customer to serve next?
+### How riders decide which customer to serve next?
 Shortest Dijkstra distance
 ### How riders decide where to go when idle?
 Random walk (randomly select the next node and the next next node)
