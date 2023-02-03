@@ -2,7 +2,7 @@
 ## Updated on Feb. 3, 2023
 Author: K.Z.
 
-Agent based model.
+Agent based model. Multiprocessing.
 
 ## Deomonstration animation
 N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability. The merchant node size represents the number of accumulated orders in this merchant.
@@ -10,12 +10,18 @@ N_v represents number of idle riders, N_b represents number of accumulated order
 <img src="./res_img/demo.gif" width="750">
 
 ## Features
+### How do the riders get matched to customer(s)?
+Batch matching. The customers (of a merchant) are not eligible for matching until the patform has accumulated k orders for this merchant. These k orders are bundled into a batch and matched to one rider. The batch matching process happens every ceiling(t/t_resolution) iterations, where t means the matching interval and t_resolution is the time duration for each iteration.
 ### How riders get their routes?
-Dijkstra method
+Dijkstra method.
 ### How riders decide which customer to serve next?
-Shortest Dijkstra distance
+Shortest Dijkstra distance.
 ### How riders decide where to go when idle?
-Random walk (randomly select the next node and the next next node)
+Random walk (randomly select the next node and the next next node) and wait for being matched.
+### What do riders do when they completed delivering a batch of orders?
+Random walk and wait for being matched again.
+### How customers are generated?
+Randomly generate $n_q$ (in codes, it is called num_generated_order) customers on every iteration. $n_q$ is the number of generated cusotomers in this iteration, determinted by q_bar, R and Delta. The platform will randomly choose 1 node from all the node in the network as customer node ID (assume the probability that the new customer will be located at each node is the same for all nodes) and 1 node from merchant node set as merchant node ID. Then, the platform will check whether the distance from this customer to her corresponding merchant is less than the maximum delivery distance, R. If yes, keep it, and remove it otherwise. Then repeat the process until the number of newly generated customers reached $n_q$.
 
 ## Rider, platform, and customer attributes
 ### Rider attributes
