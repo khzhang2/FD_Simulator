@@ -123,6 +123,7 @@ class rider:
         self.merchant_node_set = merchant_node_set
         
         adj_node, adj_node_position = get_adj_node_position(self.position)
+        self.position = adj_node_position
         self.closest_merchant_node = get_closest_node(self.position, self.merchant_node_set)
         if np.linalg.norm(adj_node_position - self.position) == 0:
             self.direction = norm_vec(np.random.rand(2))
@@ -134,7 +135,26 @@ class rider:
         
         self.dec_var = dec_var  # decision variables
 
+    def update_customer_order(self):
+        new_customer_nodes = []
+        customer_2_merchant_distance_set = []
+        for customer in self.customer_nodes:
+            customer_2_merchant_distance_set.append(np.linalg.norm(get_node_xy(customer) - get_node_xy(self.merchant_node)))
+        
+        d_min = min(customer_2_merchant_distance_set)
+        d_min_ind = customer_2_merchant_distance_set.index(d_min)
+
+        # time complexity O(n^2)
+        for i in range(len(self.customer_nodes)):
+            for customer in self.customer_nodes:
+                if np.linalg.norm(get_node_xy(self.merchant_node) - get_node_xy(customer)) > d_min:
+                    d_min = np.linalg.norm(get_node_xy(self.merchant_node) - get_node_xy(customer))
+                    new_customer_nodes.append(customer)
+        new_customer_nodes.append(self.customer_nodes[d_min_ind])
+        self.customer_nodes = new_customer_nodes
+
     def update_customer_nodes(self):
+        self.update_customer_order()
         self.finished_destination = []
         # rider merchant_node has been updated in function "move_rider"
         self.destination = self.merchant_node
@@ -182,7 +202,6 @@ class rider:
         elif self.state == 'stop':
             self.total_time += t_resolution
             self.stop(t_resolution)
-            self.check_distance_2_closest_merchant()
             return
         
         next_node_position = get_node_xy(self.next_node)
@@ -198,7 +217,6 @@ class rider:
                 # arrive the destination
                 # give up the abundant distance, and stop
                 self.stop(t_resolution)
-                self.check_distance_2_closest_merchant()
                 return
                 
             exceed_distance = travel_distance_mag - distance_to_next_node
@@ -227,18 +245,7 @@ class rider:
             self.state = 'working'
             self.stop_time = 0
             self.finished_destination.append(self.destination)  # consider the current destination as finished
-            # update
-            next_destination = get_closest_node_dijkstra(self.position, self.customer_nodes)
-            if next_destination==None:
-                # complete
-                self.complete()
-                return
-            next_dest_i = self.customer_nodes.index(next_destination)
-            new_customer_nodes = []
-            new_customer_nodes.extend(self.customer_nodes[:next_dest_i])
-            new_customer_nodes.extend(self.customer_nodes[next_dest_i+1:])
-            self.customer_nodes = new_customer_nodes
-            self.update(next_destination, t_resolution)
+            self.update_next_desination(t_resolution)
         else:
             self.stop_time = self.stop_time + t_resolution
     
@@ -261,9 +268,27 @@ class rider:
         self.total_time = 0
         return
     
-    def update(self, destination, t_resolution):
-        # after arriving one destination
-        self.destination = destination
+    def update_next_desination(self, t_resolution):
+        ##############################################################
+        # To use shortest customer, uncomment the following line
+        ##############################################################
+        # update the shortest node as the next destination
+        # next_destination = get_closest_node_dijkstra(self.position, self.customer_nodes)
+
+        next_destination = self.customer_nodes[0] if len(self.customer_nodes) > 0 else None
+        if next_destination==None:
+            # complete
+            self.complete()
+            return
+        next_dest_i = self.customer_nodes.index(next_destination)
+        # udpate customer_nodes
+        new_customer_nodes = []
+        new_customer_nodes.extend(self.customer_nodes[:next_dest_i])
+        new_customer_nodes.extend(self.customer_nodes[next_dest_i+1:])
+        self.customer_nodes = new_customer_nodes
+
+
+        self.destination = next_destination
         self.path = nx.dijkstra_path(G, self.next_node, self.destination)  # next_node is current location
         if len(self.path)==1:
             self.stop(t_resolution)
