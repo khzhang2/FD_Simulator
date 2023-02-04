@@ -1,5 +1,5 @@
 # Food Delivery System Simulator
-## Updated on Feb. 3, 2023
+## Updated on Feb. 4, 2023
 Author: K.Z.
 
 Agent based model. Multiprocessing.
@@ -44,10 +44,10 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |closest_merchant_node|int|the closest merchant node ID (by distance)|closet merchant node ID, changed according to distance to each merchant|
 |merchant_node|int|the merchant node ID that this rider is currently serving|given by platform after being matched, is None when idle|
 |merchant_node_set|int|set of all merchant nodes|unchanged|
-|customer_nodes|list|the unserved customers (the customer that this rider is currently heading for is not included)|updated on every arrival of destinations|
+|customer_nodes|list|the unserved customers (the customer that this rider is currently heading for is not included), order:(2nd closest, 3rd closest, ..., farthest, closest)|updated on every arrival of destinations|
 |finished_destination|list|list of finished destination, including merchant node ID and customer node IDs|updated on every arrival of destination, is empty when initalized, back to empty again when updated customer information again|
 |if_matched|boolean|if the rider is matched|is True after being matched, if False after complete serving the batch|
-|if_matchable|boolean|if the rider lies in the matching area, it is matchable|updated on every move, is True if the distance to the closest merchant is less than the maximum mathcing radius, False otherwise|
+|if_matchable|boolean|if the rider lies in the matching area, it is matchable|updated on every move, is True if the tider state is idle and the distance to the closest merchant is less than the maximum mathcing radius, False otherwise|
 |dec_var|dict|decision variables, contains r cR k t N q_bar|speficied by user|
 
 ## Platform attributes
@@ -73,4 +73,23 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 | position_x | float | the x coordinate of this customer | assigned on generation |
 | position_y | float | the y coordinate of this customer | assigned on generation |
 
+## Rider, platform behaviors
+### Rider
+|Behavior name                      |Description|When excecute|sup behavior(s)|sub behavior(s)|
+|---                                |---|---|---|---|
+|__init__                           |Initialize the rider as a idle rider, define attributes|On the generation of this rider|n/a||
+|update_customer_order              |Update the order of the customers|After being matched, after updated merchant node ID and customer nodes|update_customer_nodes|n/a|
+|update_customer_nodes              |Update the attributes according to the customers that this rider is going to serve (customer nodes are given in function "move_rider", which is not in this class)|After being matched|move|n/a|
+|check_distance_2_closest_merchant  |Check the distance from this rider to the closest merchant. If it is less than the maximum matching radius, if_matchable is True, otherwise, if_matchable is False|after move (position change)|move|n/a|
+|move                               |Move the rider to the next position, and update the corresponding attributes|every iteration (after order generation and matching)|n/a|update_customer_nodes, stop, check_distance_2_closest_merchant|
+|stop                               |Stop at the current position, and update the corresponding attributes|When the stop time is below the threashold or when the rider arrives the destination (can be merchant or customer)|move, update_next_desination|update_next_desination|
+|complete                           |Complete serving the batch, and update the corresponding attributes|When arrived the last destination (the next destination is None)|update_next_desination|n/a|
+|update_next_desination             |Update the next destination and corresponding attributes|After completed stop|stop|complete|
 
+### Platform
+|Behavior name                      |Description|When excecute|sup behavior(s)|sub behavior(s)|
+|---                                |---|---|---|---|
+|update_cust_df_with_new_cust       |Update the attribute customer_df with newly generated customers|When (quickly after) order generation|acquire_order|n/a|
+|acquire_order                      |Generate new orders, only those who lies in the delivery area will be kept|At the begining of each iteration|n/a|update_cust_df_with_new_cust|
+|update_matched_order               |Update attribute matched_customer_df with matched orders (by node ID, if multiple customers locate on one node, label the one with longest waiting time as matched), and remove the mathced customers from the attributes customer_df|After complete matching|match|n/a|
+|match                              |Match the idle riders to customers (and coresponding merchant, only when the closest merchant of this rider is the coresponding merchant can it be matched, and of course, its if_matchable attribute should be True), batch matching|Every matching period|n/a|update_matched_order|
