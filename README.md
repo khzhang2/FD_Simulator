@@ -15,7 +15,7 @@ Batch matching. The customers (of a merchant) are not eligible for matching unti
 ### How riders get their routes?
 Dijkstra method.
 ### How riders decide which customer to serve next?
-Shortest Dijkstra distance.
+Follow the order of the customer_nodes, which is pre-defined when updating the customer information on matching. The order is, (2nd closest, 3rd closest, ..., farthest, closest), to make sure the rider will go back (at least be close to) this merchant.
 ### How riders decide where to go when idle?
 Random walk (randomly select the next node and the next next node) and wait for being matched.
 ### What do riders do when they completed delivering a batch of orders?
