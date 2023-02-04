@@ -7,7 +7,7 @@ Agent based model. Multiprocessing.
 ## Deomonstration animation
 N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability. The merchant node size represents the number of accumulated orders in this merchant.
 
-In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matchign interval t=0.005. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
+In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matching interval t=0.005. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
 
 <img src="./res_img/demo.gif" width="750">
 
@@ -52,7 +52,7 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |if_matchable|boolean|if the rider lies in the matching area, it is matchable|updated on every move, is True if the tider state is idle and the distance to the closest merchant is less than the maximum mathcing radius, False otherwise|
 |dec_var|dict|decision variables, contains r cR k t N q_bar|speficied by user|
 
-## Platform attributes
+### Platform attributes
 
 |Attributes|Type|Note|Value|
 |---|---|---|---|
@@ -64,8 +64,8 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 | k | float | one of the decision variables | assigned by user |
 | t | float | one of the decision variables | assigned by user |
 
-## Customer attributes
-### Customers are defined and stored in class "platform"
+### Customer attributes
+#### Customers are defined as pd.DataFrame and are stored in class "platform"
 |Attributes|Type|Note|Value|
 |---|---|---|---|
 | node_ID | int | ID of this customer | assigned on generation |
@@ -76,7 +76,7 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 | position_y | float | the y coordinate of this customer | assigned on generation |
 
 ## Rider, platform behaviors
-### Rider
+### Rider behaviors
 |Behavior name                      |Description|When excecute|sup behavior(s)|sub behavior(s)|
 |---                                |---|---|---|---|
 |__init__                           |Initialize the rider as a idle rider, define attributes|On the generation of this rider|n/a||
@@ -88,7 +88,7 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |complete                           |Complete serving the batch, and update the corresponding attributes|When arrived the last destination (the next destination is None)|update_next_desination|n/a|
 |update_next_desination             |Update the next destination and corresponding attributes|After completed stop|stop|complete|
 
-### Platform
+### Platform behaviors
 |Behavior name                      |Description|When excecute|sup behavior(s)|sub behavior(s)|
 |---                                |---|---|---|---|
 |update_cust_df_with_new_cust       |Update the attribute customer_df with newly generated customers|When (quickly after) order generation|acquire_order|n/a|
