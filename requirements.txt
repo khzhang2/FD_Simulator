@@ -1,0 +1,6 @@
+pandas
+numpy
+networkx
+multiprocessing
+matplotlib
+ipdb
