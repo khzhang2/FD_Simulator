@@ -7,6 +7,8 @@ Agent based model. Multiprocessing.
 ## Deomonstration animation
 N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability. The merchant node size represents the number of accumulated orders in this merchant.
 
+In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matchign interval t=0.005. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
+
 <img src="./res_img/demo.gif" width="750">
 
 ## Features
