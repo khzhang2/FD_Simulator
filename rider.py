@@ -1,4 +1,5 @@
 import numpy as np
+np.random.seed(42)
 import pandas as pd
 import networkx as nx
 
