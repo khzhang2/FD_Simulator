@@ -113,7 +113,7 @@ class rider:
         self.speed = self.maxspeed / 2
         self.if_matched = False
         self.customer_nodes = []
-        self.finished_destination = []
+        self.newly_finished_destination = None
         self.merchant_node = None
         self.path = None
         self.destination = None
@@ -156,7 +156,6 @@ class rider:
 
     def update_customer_nodes(self):
         self.update_customer_order()
-        self.finished_destination = []
         # rider merchant_node has been updated in function "move_rider"
         self.destination = self.merchant_node
         adj_node, adj_node_position = get_adj_node_position(self.position)
@@ -187,6 +186,7 @@ class rider:
             self.if_matchable = False
 
     def move(self, t_resolution, dec_var):
+        self.newly_finished_destination = None
         self.dec_var = dec_var
         # move one step foward
         if self.state == 'idle':
@@ -245,7 +245,7 @@ class rider:
             # restart
             self.state = 'working'
             self.stop_time = 0
-            self.finished_destination.append(self.destination)  # consider the current destination as finished
+            self.newly_finished_destination = self.destination  # consider the current destination as finished
             self.update_next_desination(t_resolution)
         else:
             self.stop_time = self.stop_time + t_resolution

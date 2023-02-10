@@ -10,7 +10,7 @@ Agent based model. Multiprocessing.
 ## Deomonstration animation
 N_v represents number of idle riders, N_b represents number of accumulated order batches, p is the customer matching probability, pp is the rider matching probability. The merchant node size represents the number of accumulated orders in this merchant.
 
-In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matching interval t=0.005. The order arrival rate $\overline{q}=400$ and the total number of riders is $N=300$. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
+In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matching interval t=0.005. The order arrival rate $\overline{q}=400$ and the total number of riders is $N=200$. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
 
 <img src="./res_img/demo.gif" width="750">
 
@@ -50,7 +50,7 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |merchant_node|int|the merchant node ID that this rider is currently serving|given by platform after being matched, is None when idle|
 |merchant_node_set|int|set of all merchant nodes|unchanged|
 |customer_nodes|list|the unserved customers (the customer that this rider is currently heading for is not included), order:(2nd closest, 3rd closest, ..., farthest, closest)|updated on every arrival of destinations|
-|finished_destination|list|list of finished destination, including merchant node ID and customer node IDs|updated on every arrival of destination, is empty when initalized, back to empty again when updated customer information again|
+|newly_finished_destination|int|the new finished destination, merchant node ID or customer node ID|updated on every completion of stop, is None when working or idle|
 |if_matched|boolean|if the rider is matched|is True after being matched, if False after complete serving the batch|
 |if_matchable|boolean|if the rider lies in the matching area, it is matchable|updated on every move, is True if the tider state is idle and the distance to the closest merchant is less than the maximum mathcing radius, False otherwise|
 |dec_var|dict|decision variables, contains r cR k t N q_bar|speficied by user|
