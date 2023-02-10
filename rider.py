@@ -1,5 +1,4 @@
 import numpy as np
-np.random.seed(42)
 import pandas as pd
 import networkx as nx
 
@@ -104,7 +103,7 @@ def get_closest_node_dijkstra(from_node, target_nodes):
     return closest_node
 
 class rider:
-    def __init__(self, config, dec_var, merchant_node_set):
+    def __init__(self, config, dec_var, merchant_node_set, rd_st=np.random.RandomState(42)):
         # config is a dictionary
         self.ID = config['ID']                                  # scalar
         self.position = config['initial_position']              # 2-D array
@@ -122,17 +121,18 @@ class rider:
         self.total_time_rec = []
         self.if_matchable = False
         self.merchant_node_set = merchant_node_set
+        self.rd_st = rd_st
         
         adj_node, adj_node_position = get_adj_node_position(self.position)
         self.position = adj_node_position
         self.closest_merchant_node = get_closest_node(self.position, self.merchant_node_set)
         if np.linalg.norm(adj_node_position - self.position) == 0:
-            self.direction = norm_vec(np.random.rand(2))
+            self.direction = norm_vec(self.rd_st.rand(2))
         else:
             self.direction = norm_vec(adj_node_position - self.position)
         
         self.next_node = adj_node
-        self.nextnext_node = np.random.choice([i for i in G.neighbors(self.next_node)])
+        self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
         
         self.dec_var = dec_var  # decision variables
 
@@ -161,7 +161,7 @@ class rider:
         self.destination = self.merchant_node
         adj_node, adj_node_position = get_adj_node_position(self.position)
         if np.linalg.norm(adj_node_position - self.position) == 0:
-            self.direction = norm_vec(np.random.rand(2))
+            self.direction = norm_vec(self.rd_st.rand(2))
         else:
             self.direction = norm_vec(adj_node_position - self.position)
         
@@ -172,7 +172,7 @@ class rider:
             G, self.next_node, self.destination
         )
         # next node is the last node, then the next next node is random
-        self.nextnext_node = np.random.choice([i for i in G.neighbors(self.next_node)]) if self.next_node==self.path[-1] else self.path[1]
+        self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)]) if self.next_node==self.path[-1] else self.path[1]
 
         # when matched, set it to be unmatchable
         self.if_matchable = False
@@ -190,7 +190,7 @@ class rider:
         self.dec_var = dec_var
         # move one step foward
         if self.state == 'idle':
-            travel_distance_mag = self.speed * np.random.rand() * t_resolution
+            travel_distance_mag = self.speed * self.rd_st.rand() * t_resolution
             if self.if_matched:
                 self.state = 'working'
                 self.speed = self.maxspeed
@@ -229,11 +229,11 @@ class rider:
             self.next_node = self.nextnext_node
             
             if self.state=='idle':
-                self.nextnext_node = np.random.choice([i for i in G.neighbors(self.next_node)])
+                self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
             else:
                 if self.next_node == self.destination:
                     # next node is the last node, then the next next node is random
-                    self.nextnext_node = np.random.choice([i for i in G.neighbors(self.next_node)])
+                    self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
                 else:
                     self.nextnext_node = self.path[self.path.index(self.next_node) + 1]
         self.check_distance_2_closest_merchant()
@@ -253,10 +253,10 @@ class rider:
     def complete(self):
         # complete all orders in current bundle
         print('rider %i completed! time:%.2f'%(self.ID, self.total_time))
-        self.next_node = np.random.choice([i for i in G.neighbors(self.next_node)])
+        self.next_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
         next_node_position = get_node_xy(self.next_node)
         self.direction = norm_vec(next_node_position - self.position)
-        self.nextnext_node = np.random.choice([i for i in G.neighbors(self.next_node)])
+        self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
         
         self.state = 'idle'
         self.speed = self.maxspeed / 2
@@ -296,7 +296,7 @@ class rider:
             return
         self.next_node = self.path[1]
         # if only 2 nodes, then nextnext node is random
-        self.nextnext_node = self.path[2] if len(self.path)>2 else np.random.choice([i for i in G.neighbors(self.next_node)])  
+        self.nextnext_node = self.path[2] if len(self.path)>2 else self.rd_st.choice([i for i in G.neighbors(self.next_node)])  
         next_node_position = get_node_xy(self.next_node)
         self.direction = norm_vec(next_node_position - self.position)
 
