@@ -54,13 +54,15 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |if_matched|boolean|if the rider is matched|is True after being matched, if False after complete serving the batch|
 |if_matchable|boolean|if the rider lies in the matching area, it is matchable|updated on every move, is True if the tider state is idle and the distance to the closest merchant is less than the maximum mathcing radius, False otherwise|
 |dec_var|dict|decision variables, contains r cR k t N q_bar|speficied by user|
+|rd_st|object|Global random state| n/a |
+
 
 ### Platform attributes
 
 |Attributes|Type|Note|Value|
 |---|---|---|---|
-| customer_df | pd.DataFrame | a table of unmatched customers, columns: ['node_ID', 'merchant_node', 'state', 'waiting_time', 'position_x', 'position_y'] | add unmatched customer(s) on each iteration (order generation), remove (to matched_customer_df) on each matching |
-| matched_customer_df | pd.DataFrame | a table of matched customers, columns: ['node_ID', 'merchant_node', 'state', 'waiting_time', 'position_x', 'position_y'] | add matched customers on each mathing, update (reduce) customer(s) on each iteration (if there is anyone delivered) |
+| customer_df | pd.DataFrame | a table of unmatched customers, columns: ['node_ID', 'merchant_node', 'waiting_time', 'position_x', 'position_y'] | add unmatched customer(s) on each iteration (order generation), remove (to matched_customer_df) on each matching |
+| matched_customer_df | pd.DataFrame | a table of matched customers, columns: ['node_ID', 'merchant_node', 'waiting_time', 'position_x', 'position_y'] | add matched customers on each mathing, update (reduce) customer(s) on each iteration (if there is anyone delivered) |
 | num_accumulated_order | float | number of accumulated orders, continuous number | updated on every iteration (order generation) |
 | r | float | one of the decision variables | assigned by user |
 | cR | float | one of the decision variables | assigned by user |
@@ -73,7 +75,6 @@ Randomly generate $n_q$ (in codes, it is called num_generated_order) customers o
 |---|---|---|---|
 | node_ID | int | ID of this customer | assigned on generation |
 | merchant_ID | int | the merchant where the customer ordered meal from | assigned on generation |
-| state | string | the state of this customer | "waiting" or "matching", meaning this customer is waiting for matching or has been matched respectively, updated on each matching process |
 | waiting_time | float | the total waiting time (for matching and meal delivery) for this customer | initially 0, increase over time |
 | position_x | float | the x coordinate of this customer | assigned on generation |
 | position_y | float | the y coordinate of this customer | assigned on generation |
