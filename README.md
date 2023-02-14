@@ -12,7 +12,9 @@ N_v represents number of idle riders, N_b represents number of accumulated order
 
 In this demo, max matching radius r=4, max delivery radius R=5, batch size (bundling ratio) k=3, matching interval t=0.005. The order arrival rate $\overline{q}=400$ and the total number of riders is $N=200$. 5 merchants are spread in the city, in SW, SE, NE, NW and center.
 
-https://github.com/khzhang2/FD_Simulator/blob/main/res_img/project.mp4
+
+https://user-images.githubusercontent.com/38817831/218812171-ead39a71-0e72-4324-b8b6-34aca9210966.mp4
+
 
 ## Features
 ### How do the riders get matched to customer(s)?
