@@ -1,51 +1,40 @@
 import numpy as np
 import pandas as pd
 import networkx as nx
+import osmnx as ox
 
 
 ############################################################
 # load data
-nodes_org = pd.read_csv('./data/Chicago/node.csv')
-nodes_org['x'] = (nodes_org['x'] - nodes_org['x'].min()) * 0.0003048
-nodes_org['y'] = (nodes_org['y'] - nodes_org['y'].min()) * 0.0003048
+# get HK island road network
+G_osm = ox.graph_from_bbox(
+    22.296438, 22.272757, 114.188941, 114.124862,
+    network_type='drive',
+    retain_all=False,
+    truncate_by_edge=False,
+    simplify=True,
+)
 
-edges_org = pd.read_csv('./data/Chicago/edge.csv')
+nodes = pd.DataFrame([], columns=['NodeName', 'x', 'y'])
+nodes['NodeName'] = list(G_osm.nodes)
+nodes['x'] = [G_osm.nodes[i]['x'] for i in G_osm.nodes]
+nodes['x'] = (nodes['x'] - nodes['x'].min()) * 111  # from longitude to km
+nodes['y'] = [G_osm.nodes[i]['y'] for i in G_osm.nodes]
+nodes['y'] = (nodes['y'] - nodes['y'].min()) * 111  # from latitude to km
 
-def filter_map(nodes, edges, x_min, x_max):
-    y_min, y_max = x_min, x_max
-    nodes = nodes.loc[(nodes['x']>x_min) & (nodes['x']<x_max)]
-    nodes = nodes.loc[(nodes['y']>y_min) & (nodes['y']<y_max)]
-    nodes.index = range(nodes.shape[0])
-    
-    new_edges = pd.DataFrame([], columns=edges.columns)
-    node_list = list(nodes['NodeName'])
-    for i in edges.index:
-        if edges.loc[i, 'from'] in node_list and edges.loc[i, 'to'] in node_list:
-            new_edges.loc[i] = edges.loc[i]
-    new_edges.index = range(new_edges.shape[0])
-    
-    new_nodes = pd.DataFrame([], columns=nodes.columns)
-    for i in nodes.index:
-        if nodes.loc[i, 'NodeName'] in list(new_edges['from']) or nodes.loc[i, 'NodeName'] in list(new_edges['to']):
-            new_nodes.loc[i] = nodes.loc[i]
-    new_nodes.index = range(new_nodes.shape[0])
-    new_nodes['NodeName'] = new_nodes['NodeName'].astype(int)
-    
-    return new_nodes, new_edges
+edges_lst = list(G_osm.edges.data())
+l = len(edges_lst)
 
-nodes, edges = filter_map(nodes_org, edges_org, 97, 107)
-nodes['x'] = nodes['x'] - nodes['x'].min()
-nodes['y'] = nodes['y'] - nodes['y'].min()
-
-edges['distance'] = ''
-for i in edges.index:
-    from_node = nodes.loc[nodes['NodeName']==edges.loc[i, 'from']]
-    to_node = nodes.loc[nodes['NodeName']==edges.loc[i, 'to']]
-    edges.loc[i, 'distance'] = np.linalg.norm(from_node[['x', 'y']].values.flatten() - to_node[['x', 'y']].values.flatten())
+edges = pd.DataFrame([], columns=['EdgeName', 'from', 'to', 'distance'])
+edges['EdgeName'] = range(l)
+edges['from'] = [edges_lst[i][0] for i in range(l)]
+edges['to'] = [edges_lst[i][1] for i in range(l)]
+edges['distance'] = [edges_lst[i][2]['length']/1000 for i in range(l)]
 
 G = nx.Graph()
 G.add_nodes_from(nodes['NodeName'])
 G.add_weighted_edges_from(edges.iloc[:, 1:].to_numpy())
+
 ############################################################
 
 ## Difine rider
