@@ -16,4 +16,4 @@ In this demo, max matching radius r=1 km, max delivery radius R=2 km, batch size
 https://user-images.githubusercontent.com/38817831/219488679-ef1185e9-418f-4f86-9ec3-410203a7fb3e.mp4
 
 
-## Details in [here](https://khzhang2.github.io/project/FD_simulator/)
+## More details in [here](https://khzhang2.github.io/project/FD_simulator/)
