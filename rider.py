@@ -260,7 +260,7 @@ class rider:
     
     def update_next_desination(self, t_resolution):
         ##############################################################
-        # To use shortest customer, uncomment the following line
+        # To use the closest customer, uncomment the following line
         ##############################################################
         # update the shortest node as the next destination
         # next_destination = get_closest_node_dijkstra(self.position, self.customer_nodes)
