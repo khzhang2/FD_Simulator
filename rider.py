@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import osmnx as ox
+import shapely
 
 
 ############################################################
@@ -30,6 +31,21 @@ nodes['x'] = [G_sgp.nodes[i]['x'] for i in G_sgp.nodes]  # longitude
 nodes['y'] = [G_sgp.nodes[i]['y'] for i in G_sgp.nodes]  # latitute
 
 edges_lst = list(G_sgp.edges.data())
+for i in range(len(edges_lst)):
+    if 'geometry' not in list(edges_lst[i][2].keys()):
+        node_1_coor = nodes.loc[nodes['NodeName'] == edges_lst[i][0], ['x', 'y']].to_numpy().flatten().tolist()
+        node_2_coor = nodes.loc[nodes['NodeName'] == edges_lst[i][1], ['x', 'y']].to_numpy().flatten().tolist()
+        edges_lst[i][2]['geometry'] = shapely.geometry.LineString([node_1_coor, node_2_coor])
+    else:
+        None
+    
+    if 'maxspeed' not in list(edges_lst[i][2].keys()):
+        edges_lst[i][2]['maxspeed'] = int(edges_lst[i - 1][2]['maxspeed'])
+    else:
+        if isinstance(edges_lst[i][2]['maxspeed'], str):
+            edges_lst[i][2]['maxspeed'] = int(edges_lst[i][2]['maxspeed'])
+        elif isinstance(edges_lst[i][2]['maxspeed'], list):
+            edges_lst[i][2]['maxspeed'] = max(map(int, edges_lst[i][2]['maxspeed']))
 
 edges = pd.DataFrame([], columns=['EdgeName', 'from', 'to', 'distance'])
 edges['EdgeName'] = range(len(edges_lst))
@@ -37,7 +53,7 @@ edges['from'] = [edges_lst[i][0] for i in range(len(edges_lst))]
 edges['to'] = [edges_lst[i][1] for i in range(len(edges_lst))]
 edges['distance'] = [edges_lst[i][2]['length']/1000 for i in range(len(edges_lst))]  # unit: km
 edges['maxspeed'] = [edges_lst[i][2]['maxspeed'] for i in range(len(edges_lst))]  # unit: km/hr
-edges['travel_time_min'] = edges['distance'] / edges['maxspeed']  # unit: hour
+edges['travel_time_minimum'] = edges['distance'] / edges['maxspeed']  # unit: hour
 
 G_sgp.add_weighted_edges_from(edges.iloc[:, 1:].to_numpy())
 
@@ -110,6 +126,18 @@ def get_closest_node_dijkstra(from_node, target_nodes):
     return closest_node
 
 
+def get_link(net, node1, node2):
+    '''input: node1 and node2, output: full informaition of link'''
+    link = net.get_edge_data(node1, node2)
+    if link is None:
+        link = net.get_edge_data(node2, node1)
+    else:
+        None
+    assert link is not None
+    
+    return link[0]
+
+
 class rider:
     def __init__(self, config, dec_var, merchant_node_set, rd_st=np.random.RandomState(42)):
         # config is a dictionary
@@ -123,7 +151,7 @@ class rider:
         self.customer_nodes = []
         self.newly_finished_destination = None
         self.merchant_node = None
-        self.path = None
+        self.path_to_dest = None
         self.destination = None
         self.total_time = 0
         self.total_time_rec = []
@@ -139,7 +167,8 @@ class rider:
         else:
             self.direction = norm_vec(adj_node_position - self.position)
 
-        self.next_node = adj_node
+        self.prev_node = None  # possible to contain current pos
+        self.next_node = adj_node  # does contain current pos
         self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
 
         self.dec_var = dec_var  # decision variables
@@ -162,7 +191,7 @@ class rider:
         new_customer_nodes.append(self.customer_nodes[d_min_ind])
         self.customer_nodes = new_customer_nodes
 
-    def update_customer_nodes(self):
+    def update_att_according_to_the_next_cust(self):
         self.update_customer_order()
         # rider merchant_node has been updated in function "move_rider"
         self.destination = self.merchant_node
@@ -175,11 +204,11 @@ class rider:
         self.next_node = adj_node
 
         # first go to the closest node, then follow the path
-        self.path = nx.dijkstra_path(
+        self.path_to_dest = nx.dijkstra_path(
             G, self.next_node, self.destination
         )
         # next node is the last node, then the next next node is random
-        self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)]) if self.next_node == self.path[-1] else self.path[1]
+        self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)]) if self.next_node == self.path_to_dest[-1] else self.path_to_dest[1]
 
         # when matched, set it to be unmatchable
         self.if_matchable = False
@@ -196,54 +225,67 @@ class rider:
     def move(self, t_resolution, dec_var):
         self.newly_finished_destination = None
         self.dec_var = dec_var
-        # move one step foward
+        self.total_time += t_resolution
+        # move one time step foward
         if self.state == 'idle':
             travel_distance_mag = self.speed * self.rd_st.rand() * t_resolution
             if self.if_matched:
                 self.state = 'working'
                 self.speed = self.maxspeed
                 # customer_nodes has been updated in function "move_rider"
-                self.update_customer_nodes()
+                self.update_att_according_to_the_next_cust()
         elif self.state == 'working':
             travel_distance_mag = self.speed * t_resolution
-            self.total_time += t_resolution
         elif self.state == 'stop':
-            self.total_time += t_resolution
             self.stop(t_resolution)
             return
+        
+        # the current link
+        self.link = get_link(self.prev_node, self.next_node)
+        link_geometry = self.link['geometry']
+        first_point, last_point = link_geometry.coords[0], link_geometry.coords[-1]
 
-        next_node_position = get_node_xy(self.next_node)
-        distance_to_next_node = np.linalg.norm(self.position - next_node_position)
+        # whether the direction of the link is the reverse of our traveling direction
+        reverse = (self.prev_node != first_point) and (self.next_node != last_point)
+        if reverse:
+            link_geometry = shapely.geometry.LineString(list(link_geometry.coords)[::-1])
+
+        # the remaining length from current location to the next node
+        distance_to_next_node = link_geometry.length - link_geometry.project(shapely.geometry.Point(self.position))
+
+        # distance_to_next_node = np.linalg.norm(self.position - next_node_position)
 
         if travel_distance_mag < distance_to_next_node:
-            self.position = self.position + travel_distance_mag * self.direction
+            # self.position = self.position + travel_distance_mag * self.direction
+            new_position_point = link_geometry.interpolate(link_geometry.project(shapely.geometry.Point(self.position)) + distance_to_next_node)
+            self.posiiton = np.array(new_position_point.x, new_position_point.y)
         elif travel_distance_mag >= distance_to_next_node:
-            # travel distance greater than the distance to the next node
+            # the residual distance to travel
+            travel_distance_mag -= distance_to_next_node
+
+            # travel to the next node
+            next_node_position = get_node_xy(self.next_node)
             self.position = next_node_position
-
-            if self.state == 'working' and self.next_node == self.destination:  # this is for working riders
-                # arrive the destination
-                # give up the abundant distance, and stop
-                self.stop(t_resolution)
-                return
-
-            exceed_distance = travel_distance_mag - distance_to_next_node
-
-            nextnext_node_position = get_node_xy(self.nextnext_node)
-            self.direction = norm_vec(nextnext_node_position - next_node_position)
-
-            self.position = self.position + exceed_distance * self.direction
+            self.prev_node = self.next_node
             self.next_node = self.nextnext_node
 
             if self.state == 'idle':
                 self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
-            else:
+                self.check_distance_2_closest_merchant()
+                self.move(t_resolution, dec_var)
+            elif self.state == 'working':
                 if self.next_node == self.destination:
-                    # next node is the last node, then the next next node is random
-                    self.nextnext_node = self.rd_st.choice([i for i in G.neighbors(self.next_node)])
+                    # arrive the destination
+                    # give up the residual distance, and stop
+                    self.stop(t_resolution)
+                    # return
                 else:
-                    self.nextnext_node = self.path[self.path.index(self.next_node) + 1]
-        self.check_distance_2_closest_merchant()
+                    self.nextnext_node = self.path_to_dest[self.path_to_dest.index(self.next_node) + 1]
+                    self.move(t_resolution, dec_var)
+            else:
+                None
+        else:
+            None
 
     def stop(self, t_resolution):
         # when pickup, delivered, or else
@@ -269,7 +311,7 @@ class rider:
         self.speed = self.maxspeed / 2
         self.if_matched = False
         self.customer_nodes = []
-        self.path = None
+        self.path_to_dest = None
         self.destination = None
         self.merchant_node = None
         self.total_time_rec.append(self.total_time)
@@ -296,13 +338,13 @@ class rider:
         self.customer_nodes = new_customer_nodes
 
         self.destination = next_destination
-        self.path = nx.dijkstra_path(G, self.next_node, self.destination)  # next_node is current location
-        if len(self.path) == 1:
+        self.path_to_dest = nx.dijkstra_path(G, self.next_node, self.destination)  # next_node is current location
+        if len(self.path_to_dest) == 1:
             self.stop(t_resolution)
             return
-        self.next_node = self.path[1]
+        self.next_node = self.path_to_dest[1]
         # if only 2 nodes, then nextnext node is random
-        self.nextnext_node = self.path[2] if len(self.path) > 2 else self.rd_st.choice([i for i in G.neighbors(self.next_node)])
+        self.nextnext_node = self.path_to_dest[2] if len(self.path_to_dest) > 2 else self.rd_st.choice([i for i in G.neighbors(self.next_node)])
         next_node_position = get_node_xy(self.next_node)
         self.direction = norm_vec(next_node_position - self.position)
 
